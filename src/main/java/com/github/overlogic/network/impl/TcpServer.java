@@ -7,6 +7,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
+import com.github.overlogic.network.ClientEvent;
 import com.github.overlogic.network.ClientEventType;
 import com.github.overlogic.network.Server;
 
@@ -21,21 +22,23 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<T> implem
 	}
 	
 	private void beginAccept() {
-		this.serverChannel.accept(ByteBuffer.allocateDirect(BUFFER_SIE), this);
+		this.serverChannel.accept(ByteBuffer.allocate(BUFFER_SIE), this);
 	}
 		
 	@Override
-	public void completed(final AsynchronousSocketChannel channel, final ByteBuffer attachment) {
-		T client = this.createClient(channel);
+	public void completed(final AsynchronousSocketChannel channel, final ByteBuffer buffer) {
+		System.out.println("server::completed accepted client");
+		T client = this.createClient(buffer, channel);
 		if(this.acceptable(client)) {
-			this.clientEvent(ClientEventType.CONNECTED, client);
+			client.observed(this);
+			this.send(new ClientEvent(ClientEventType.CONNECTED, client));
+			this.addChild(client);
 		}
 		else {
 			try {
 				channel.close();
 			} 
-			catch (IOException e) {
-				// TODO: what ?
+			catch (IOException e) {				
 			}
 		}
 		this.beginAccept();
@@ -55,5 +58,5 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<T> implem
 	}
 	
 	public abstract boolean acceptable(final T client);
-	public abstract T createClient(final AsynchronousSocketChannel channel);
+	public abstract T createClient(final ByteBuffer buffer, final AsynchronousSocketChannel channel);
 }

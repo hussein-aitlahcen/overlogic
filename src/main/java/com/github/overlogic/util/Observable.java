@@ -1,9 +1,9 @@
 package com.github.overlogic.util;
 
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 
 public interface Observable<T> {
-	public void observe(final T observer);	
-	public void ignore(final T observer);	
-	public void notifyObservers(final UnaryOperator<T> fun);
+	public void observed(final T observer);	
+	public void ignored(final T observer);	
+	public void notifyObservers(final Consumer<T> fun);
 }

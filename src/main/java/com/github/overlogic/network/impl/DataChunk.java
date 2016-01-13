@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import com.github.overlogic.util.concurrent.actor.Message;
 
 public final class DataChunk extends Message {
-	public final ByteBuffer chunk;
+	private final ByteBuffer chunk;
 	public DataChunk(final ByteBuffer chunk) {
 		this.chunk = chunk;
 	}

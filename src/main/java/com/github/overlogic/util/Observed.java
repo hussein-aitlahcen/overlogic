@@ -1,7 +1,7 @@
 package com.github.overlogic.util;
 
 import java.util.ArrayList;
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 
 public abstract class Observed<T> {
 	private final ArrayList<T> observers;
@@ -10,17 +10,23 @@ public abstract class Observed<T> {
 		this.observers = new ArrayList<T>();
 	}
 	
-	public void observe(final T observer) {
-		this.observers.add(observer);
+	public void observed(final T observer) {
+		synchronized(this.observers) {
+			this.observers.add(observer);
+		}
 	}
 	
-	public void ignore(final T observer) {
-		this.observers.remove(observer);
+	public void ignored(final T observer) {
+		synchronized(this.observers) {
+			this.observers.remove(observer);
+		}
 	}
 	
-	public void notifyObservers(final UnaryOperator<T> fun) {
-		for(T observer : this.observers) {
-			fun.apply(observer);
+	public void notifyObservers(final Consumer<T> fun) {
+		synchronized(this.observers) {
+			for(T observer : this.observers) {
+				fun.accept(observer);
+			}
 		}
 	}
 }

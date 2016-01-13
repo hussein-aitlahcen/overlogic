@@ -21,8 +21,10 @@ public abstract class Server<T extends Actor> extends Actor {
 		return this.port;
 	}
 	
-	protected void clientEvent(ClientEventType type, T client) {
-		switch(type) {
+	@SuppressWarnings("unchecked")
+	private void handleClientEvent(ClientEvent event) {
+		T client = (T)event.client();
+		switch(event.type()) {
 			case CONNECTED:
 				this.addChild(client);
 				break;
@@ -30,12 +32,12 @@ public abstract class Server<T extends Actor> extends Actor {
 				this.removeChild(client);
 				break;			
 		}
-				
 	}
 	
 	@Override
 	public boolean handle(TypeSwitch<Message> sw) {
 		return sw
+				.with(ClientEvent.class, this::handleClientEvent)
 				.handled() || super.handle(sw);		
 	}
 	
