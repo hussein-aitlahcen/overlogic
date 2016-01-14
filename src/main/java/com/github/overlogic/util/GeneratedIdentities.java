@@ -12,10 +12,12 @@ public abstract class GeneratedIdentities<T> implements Identities<T> {
 		this.identities.addAll(identities);
 	}
 	
+	@Override
 	public T acquire() {
 		return this.identities.pop();
 	}
-	
+
+	@Override
 	public void release(final T identity) {
 		this.identities.push(identity);
 	}

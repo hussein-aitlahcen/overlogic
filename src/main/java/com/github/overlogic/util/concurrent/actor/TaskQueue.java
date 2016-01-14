@@ -4,9 +4,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.github.overlogic.util.Nameable;
 import com.github.overlogic.util.TimeSource;
+import com.github.overlogic.util.concurrent.Startable;
+import com.github.overlogic.util.concurrent.Stoppable;
+import com.github.overlogic.util.concurrent.Synchronizable;
 
-public final class TaskQueue extends Actor {
+public final class TaskQueue extends Actor implements Nameable, Runnable, Synchronizable, Stoppable, Startable {
 	
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 	 
@@ -22,37 +26,50 @@ public final class TaskQueue extends Actor {
 		this.running = false;
 	}
 	
+	public TaskQueue doStart() {
+		this.start();
+		return this;
+	}
+	
+	public TaskQueue doStop() {
+		this.stop();
+		return this;
+	}
+	
+	public TaskQueue doSynchronize() throws InterruptedException {
+		this.synchronize();
+		return this;
+	}
+	
 	public boolean running() {
 		return this.running;
 	}
 	
+	@Override
 	public final String name() {
 		return this.name;
 	}
-	
-	private final long realTime() {
-		return this.timeSource.current();
-	}
-	
+		
+	@Override
 	public void start() {
 		this.running = true;
-		THREAD_POOL.submit(() -> this.execute());
+		THREAD_POOL.submit(this);
 	}
 	
-	public void gracefulStop() {
-		this.kill();
-	}
-	
-	public void abruptStop() {
+	@Override
+	public void stop() {
 		this.running = false;
 	}
-	
-	public synchronized void synchronize() throws InterruptedException {
-		this.wait();
+		
+	@Override
+	public void synchronize() throws InterruptedException {
+		synchronized(this) {
+			this.wait();
+		}
 	}
 	
-	private void execute() {
-		 				
+	@Override
+	public void run() {		 				
 		final long begin = this.realTime();	
 		
 		if(this.cumulatedTime == 0) {
@@ -80,10 +97,20 @@ public final class TaskQueue extends Actor {
 		}
 		
 		if(this.running) {
-			THREAD_POOL.submit(() -> execute());
+			THREAD_POOL.submit(this);
 		}
 		else {
-			this.notify();
+			this.fireStop();
+		}
+	}
+
+	private final long realTime() {
+		return this.timeSource.current();
+	}
+	
+	private void fireStop() {
+		synchronized(this) {
+			this.notifyAll();
 		}
 	}
 }

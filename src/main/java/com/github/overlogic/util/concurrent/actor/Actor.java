@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.overlogic.util.Observed;
+import com.github.overlogic.util.Observable;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.ExpirableTask;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
@@ -14,25 +14,32 @@ import com.github.overlogic.util.concurrent.actor.message.AddChild;
 import com.github.overlogic.util.concurrent.actor.message.Kill;
 import com.github.overlogic.util.concurrent.actor.message.RemoveChild;
 
-public abstract class Actor extends Observed<Actor> implements ExpirableTask {
+public abstract class Actor implements Observable<Actor>, ExpirableTask {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(Actor.class);
 	
+	private final ConcurrentLinkedQueue<Actor> observers;
 	protected final ArrayList<Actor> childs;
 	protected final ConcurrentLinkedQueue<AbstractMessage> messages;
 	protected long cumulatedTime;
 	protected boolean completed;
 	
 	public Actor() {
+		this.observers = new ConcurrentLinkedQueue<Actor>();
 		this.childs = new ArrayList<Actor>();
 		this.messages = new ConcurrentLinkedQueue<AbstractMessage>();
 		this.completed = false;
 	}
-	
+
 	protected ArrayList<Actor> childs() {
 		return this.childs;
 	}
-		
+	
+	@Override
+	public ConcurrentLinkedQueue<Actor> observers() {
+		return this.observers;
+	}
+			
 	public Actor addChild(final Actor child) {
 		return this.send(new AddChild(child));
 	}
