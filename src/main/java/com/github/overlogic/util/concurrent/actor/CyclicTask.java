@@ -6,17 +6,17 @@ public class CyclicTask extends Actor {
 	private static final long SPIN_INFINITE = -1;
 	
 	private final Runnable action;
-	private final long delay;
+	private final long delayInMs;
 	private long spin;
 	private long nextExecution;
 
-	public CyclicTask(final Runnable action, final long delay) {
-		this(action, delay, SPIN_INFINITE);
+	public CyclicTask(final Runnable action, final long delayInMs) {
+		this(action, delayInMs, SPIN_INFINITE);
 	}
 	
-	public CyclicTask(final Runnable action, final long delay, final long spin) {
+	public CyclicTask(final Runnable action, final long delayInMs, final long spin) {
 		this.action = action;
-		this.delay = delay;
+		this.delayInMs = delayInMs;
 		this.spin = spin;
 		this.nextExecution = NOT_STARTED;
 	}
@@ -26,7 +26,7 @@ public class CyclicTask extends Actor {
 	}
 		
 	private void scheduleNextExecution() {
-		this.nextExecution += this.delay;		
+		this.nextExecution += this.delayInMs;		
 	}
 	
 	private boolean shouldExecute() {

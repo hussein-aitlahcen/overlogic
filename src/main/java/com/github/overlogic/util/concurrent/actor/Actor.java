@@ -33,16 +33,21 @@ public abstract class Actor extends Observed<Actor> implements ExpirableTask {
 		return this.childs;
 	}
 		
-	public void addChild(final Actor child) {
-		this.send(new AddChild(child));
+	public Actor addChild(final Actor child) {
+		return this.send(new AddChild(child));
 	}
 	
-	public void removeChild(final Actor child) {
-		this.send(new RemoveChild(child));
+	public Actor removeChild(final Actor child) {
+		return this.send(new RemoveChild(child));
 	}
 	
-	public void send(final AbstractMessage message) {
+	public void kill() {
+		this.send(Kill.INSTANCE);
+	}
+	
+	public Actor send(final AbstractMessage message) {
 		this.messages.offer(message);
+		return this;
 	}	
 		
 	@Override

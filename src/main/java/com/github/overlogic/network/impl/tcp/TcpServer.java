@@ -26,9 +26,9 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	
 	public TcpServer(final Configuration configuration) throws IOException, ConfigKeyNotFoundException {
 		super(configuration);
-        this.serverChannel = AsynchronousServerSocketChannel.open();
-        this.bufferCache = Suppliers.memoize(this::allocate);
-        this.bufferSize = Integer.valueOf(configuration.value(BUFFER_SIZE));
+		this.serverChannel = AsynchronousServerSocketChannel.open();
+		this.bufferCache = Suppliers.memoize(this::allocate);
+		this.bufferSize = Integer.valueOf(configuration.value(BUFFER_SIZE));
 	}
 	
 	private byte[] allocate() {
@@ -106,9 +106,9 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	public void listen() throws Exception {	
         if(!this.serverChannel.isOpen())
         	throw new SocketListeningException("Could not listen to address : " + host() + ":" + port());        	
-        this.serverChannel.bind(new InetSocketAddress(host(), port()));
-        this.acceptNext();
-        LOGGER.debug("TcpServer listening");
+		this.serverChannel.bind(new InetSocketAddress(host(), port()));
+		this.acceptNext();
+		LOGGER.debug("TcpServer listening");
 	}
 	
 	public boolean acceptable(final T client) {
