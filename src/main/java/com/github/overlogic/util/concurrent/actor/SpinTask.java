@@ -8,7 +8,7 @@ public abstract class SpinTask extends Actor {
 	}
 
 	@Override
-	public boolean completed() {
+	public boolean expired() {
 		return spin <= 0;
 	}
 	

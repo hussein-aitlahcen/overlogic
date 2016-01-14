@@ -1,10 +1,10 @@
-package com.github.overlogic.network.impl;
+package com.github.overlogic.network;
 
 import java.nio.ByteBuffer;
 
-import com.github.overlogic.util.concurrent.actor.Message;
+import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 
-public final class DataChunk extends Message {
+public final class DataChunk extends AbstractMessage {
 	private final ByteBuffer chunk;
 	public DataChunk(final ByteBuffer chunk) {
 		this.chunk = chunk;

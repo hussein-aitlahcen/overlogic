@@ -1,22 +1,20 @@
 package com.github.overlogic.util.concurrent.actor;
 
-import java.util.concurrent.Callable;
-
 public class CyclicTask extends Actor {
 	
 	private static final long NOT_STARTED = -1;
 	private static final long SPIN_INFINITE = -1;
 	
-	private final Callable<Void> action;
+	private final Runnable action;
 	private final long delay;
 	private long spin;
 	private long nextExecution;
 
-	public CyclicTask(final Callable<Void> action, final long delay) {
+	public CyclicTask(final Runnable action, final long delay) {
 		this(action, delay, SPIN_INFINITE);
 	}
 	
-	public CyclicTask(final Callable<Void> action, final long delay, final long spin) {
+	public CyclicTask(final Runnable action, final long delay, final long spin) {
 		this.action = action;
 		this.delay = delay;
 		this.spin = spin;
@@ -35,10 +33,10 @@ public class CyclicTask extends Actor {
 		return this.cumulatedTime >= this.nextExecution;
 	}
 		
-	private void killIfSpinCompleted() {
-		if(this.spin > 0) {
+	private void checkCompletion() {
+		if(this.spin != SPIN_INFINITE) {
 			this.spin--;
-			if(this.spin == 0) {
+			if(this.spin < 1) {
 				this.completed = true;
 			}
 		}	
@@ -49,9 +47,9 @@ public class CyclicTask extends Actor {
 		super.execute(delta);
 		if(this.started()) {
 			if(this.shouldExecute()) {
-				this.action.call();
+				this.action.run();
 				this.scheduleNextExecution();
-				this.killIfSpinCompleted();
+				this.checkCompletion();
 			}
 		}
 		else {
