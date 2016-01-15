@@ -1,14 +1,18 @@
 package com.github.overlogic.util.concurrent.actor;
 
-public class CyclicTask extends Actor {
+import com.github.overlogic.util.concurrent.ExpirableTask;
+
+public class CyclicTask implements ExpirableTask {
 	
 	private static final long NOT_STARTED = -1;
 	private static final long SPIN_INFINITE = -1;
 	
 	private final Runnable action;
 	private final long delayInMs;
+	private long cumulatedTime;
 	private long spin;
 	private long nextExecution;
+	private boolean expired;
 
 	public CyclicTask(final Runnable action, final long delayInMs) {
 		this(action, delayInMs, SPIN_INFINITE);
@@ -18,6 +22,8 @@ public class CyclicTask extends Actor {
 		this.action = action;
 		this.delayInMs = delayInMs;
 		this.spin = spin;
+		this.expired = false;
+		this.cumulatedTime = 0;
 		this.nextExecution = NOT_STARTED;
 	}
 
@@ -29,22 +35,32 @@ public class CyclicTask extends Actor {
 		this.nextExecution += this.delayInMs;		
 	}
 	
+	private void accumulate(final long delta) {
+		this.cumulatedTime += delta;
+	}
+	
 	private boolean shouldExecute() {
 		return this.cumulatedTime >= this.nextExecution;
 	}
-		
+			
 	private void checkCompletion() {
 		if(this.spin != SPIN_INFINITE) {
 			this.spin--;
 			if(this.spin < 1) {
-				this.completed = true;
+				this.expired = true;
 			}
 		}	
 	}
-		
+
+
+	@Override
+	public boolean expired() {
+		return this.expired;
+	}
+	
 	@Override
 	public void execute(final long delta) throws Exception {	
-		super.execute(delta);
+		this.accumulate(delta);
 		if(this.started()) {
 			if(this.shouldExecute()) {
 				this.action.run();

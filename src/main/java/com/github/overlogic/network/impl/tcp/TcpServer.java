@@ -10,7 +10,6 @@ import java.nio.channels.CompletionHandler;
 import com.github.overlogic.network.ClientEvent;
 import com.github.overlogic.network.ClientEventType;
 import com.github.overlogic.network.Server;
-import com.github.overlogic.util.ConfigKeyNotFoundException;
 import com.github.overlogic.util.Configuration;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
@@ -24,7 +23,7 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	private final Supplier<byte[]> bufferCache;
 	private final int bufferSize;
 	
-	public TcpServer(final Configuration configuration) throws IOException, ConfigKeyNotFoundException {
+	public TcpServer(final Configuration configuration) throws Exception {
 		super(configuration);
 		this.serverChannel = AsynchronousServerSocketChannel.open();
 		this.bufferCache = Suppliers.memoize(this::allocate);
@@ -32,7 +31,7 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	}
 	
 	private byte[] allocate() {
-		return new byte[this.bufferSize() * this.maxClients()];		
+		return new byte[this.bufferSize() * (this.maxClients() + 1)];		
 	}
 		
 	public final byte[] buffer() {
@@ -105,7 +104,7 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	@Override
 	public void listen() throws Exception {	
         if(!this.serverChannel.isOpen())
-        	throw new SocketListeningException("Could not listen to address : " + host() + ":" + port());        	
+        	throw new Exception("TcpServer failed to open socket channel : " + host() + ":" + port());        	
 		this.serverChannel.bind(new InetSocketAddress(host(), port()));
 		this.acceptNext();
 		LOGGER.debug("TcpServer listening");

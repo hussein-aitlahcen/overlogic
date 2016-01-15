@@ -9,29 +9,28 @@ import org.slf4j.LoggerFactory;
 import com.github.overlogic.util.Observable;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.ExpirableTask;
+import com.github.overlogic.util.concurrent.ExpirableUpdatable;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 import com.github.overlogic.util.concurrent.actor.message.AddChild;
 import com.github.overlogic.util.concurrent.actor.message.Kill;
-import com.github.overlogic.util.concurrent.actor.message.RemoveChild;
 
-public abstract class Actor implements Observable<Actor>, ExpirableTask {
+public abstract class Actor implements Observable<Actor>, ExpirableUpdatable {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(Actor.class);
 	
 	private final ConcurrentLinkedQueue<Actor> observers;
-	protected final ArrayList<Actor> childs;
+	protected final ArrayList<ExpirableTask> childs;
 	protected final ConcurrentLinkedQueue<AbstractMessage> messages;
-	protected long cumulatedTime;
-	protected boolean completed;
+	private boolean expired;
 	
 	public Actor() {
 		this.observers = new ConcurrentLinkedQueue<Actor>();
-		this.childs = new ArrayList<Actor>();
+		this.childs = new ArrayList<ExpirableTask>();
 		this.messages = new ConcurrentLinkedQueue<AbstractMessage>();
-		this.completed = false;
+		this.expired = false;
 	}
 
-	protected ArrayList<Actor> childs() {
+	protected ArrayList<ExpirableTask> childs() {
 		return this.childs;
 	}
 	
@@ -44,10 +43,6 @@ public abstract class Actor implements Observable<Actor>, ExpirableTask {
 		return this.send(new AddChild(child));
 	}
 	
-	public Actor removeChild(final Actor child) {
-		return this.send(new RemoveChild(child));
-	}
-	
 	public void kill() {
 		this.send(Kill.INSTANCE);
 	}
@@ -56,15 +51,14 @@ public abstract class Actor implements Observable<Actor>, ExpirableTask {
 		this.messages.offer(message);
 		return this;
 	}	
-		
-	@Override
-	public boolean expired() {
-		return this.completed;
+	
+	protected void notifyObservers(final AbstractMessage message) {
+		this.notifyObservers(observer -> {
+			observer.send(message);
+		});
 	}
 	
-	@Override
-	public void execute(final long delta) throws Exception {
-		this.accumulate(delta);
+	private void handlePendingMessages() {
 		int size = this.messages.size();
 		for(int i = 0; i < size; i++) {
 			final AbstractMessage message = this.messages.poll();
@@ -72,11 +66,15 @@ public abstract class Actor implements Observable<Actor>, ExpirableTask {
 				LOGGER.debug(
 						"Actor unhandled message {}", 
 						getClass().getSimpleName(), 
-						message.getClass().getSimpleName());
+						message.getClass().getSimpleName()
+				);
 			}
 		}		
+	}
+	
+	private void updateChildTasks(final long delta) throws Exception {
 		for(int i = this.childs.size() - 1; i > -1; i--) {
-			Actor child = this.childs.get(i);
+			ExpirableTask child = this.childs.get(i);
 			child.execute(delta);
 			if(child.expired()) {
 				this.remove(child);
@@ -84,36 +82,42 @@ public abstract class Actor implements Observable<Actor>, ExpirableTask {
 			}
 		}
 	}
-
-	private void accumulate(final long delta) {
-		this.cumulatedTime += delta;
+		
+	@Override
+	public boolean expired() {
+		return this.expired;
 	}
 	
-	protected void add(final Actor child) {
+	protected void expired(boolean value) {
+		this.expired = value;
+	}
+	
+	@Override
+	public void update(final long delta) throws Exception {
+		this.handlePendingMessages();
+		this.updateChildTasks(delta);
+	}
+	
+	protected void add(final ExpirableTask child) {
 		this.childs.add(child);
 	}
 	
-	protected void remove(final Actor child) {
+	protected void remove(final ExpirableTask child) {
 		this.childs.remove(child);
 	}
 	
 	private void handleAddChild(final AddChild message) {
-		this.add(message.child());
-	}
-	
-	private void handleRemoveChild(final RemoveChild message) {
-		this.remove(message.child());
+		this.add(new UpdateExpirableTask(message.child()));
 	}
 	
 	private void handleKill(Kill message) {
-		completed = true;
+		this.expired(true);
 		LOGGER.debug("Actor killed");
 	}
 	
 	public boolean handle(final TypeSwitch<AbstractMessage> sw) {	
 		return sw
 				.with(AddChild.class, this::handleAddChild)
-				.with(RemoveChild.class, this::handleRemoveChild)
 				.with(Kill.class, this::handleKill)
 				.handled();
 	}

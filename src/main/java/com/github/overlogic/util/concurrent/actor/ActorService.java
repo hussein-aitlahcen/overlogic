@@ -6,11 +6,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.github.overlogic.util.Nameable;
 import com.github.overlogic.util.TimeSource;
-import com.github.overlogic.util.concurrent.Startable;
-import com.github.overlogic.util.concurrent.Stoppable;
-import com.github.overlogic.util.concurrent.Synchronizable;
+import com.github.overlogic.util.concurrent.Service;
 
-public final class TaskQueue extends Actor implements Nameable, Runnable, Synchronizable, Stoppable, Startable {
+public final class ActorService extends Actor implements Nameable, Service {
 	
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 	 
@@ -18,25 +16,27 @@ public final class TaskQueue extends Actor implements Nameable, Runnable, Synchr
 	private final String name;
 	private final long interval;
 	private final TimeSource timeSource;
+	private long cumulatedTime;
 		
-	public TaskQueue(final String name, final long interval, final TimeSource timeSource) {
+	public ActorService(final String name, final long interval, final TimeSource timeSource) {
 		this.name = name;
 		this.interval = interval;
 		this.timeSource = timeSource;
+		this.cumulatedTime = 0;
 		this.running = false;
 	}
 	
-	public TaskQueue doStart() {
+	public ActorService doStart() {
 		this.start();
 		return this;
 	}
 	
-	public TaskQueue doStop() {
+	public ActorService doStop() {
 		this.stop();
 		return this;
 	}
 	
-	public TaskQueue doSynchronize() throws InterruptedException {
+	public ActorService doSynchronize() throws Exception {
 		this.synchronize();
 		return this;
 	}
@@ -62,7 +62,7 @@ public final class TaskQueue extends Actor implements Nameable, Runnable, Synchr
 	}
 		
 	@Override
-	public void synchronize() throws InterruptedException {
+	public void synchronize() throws Exception {
 		synchronized(this) {
 			this.wait();
 		}
@@ -72,30 +72,37 @@ public final class TaskQueue extends Actor implements Nameable, Runnable, Synchr
 	public void run() {		 				
 		final long begin = this.realTime();	
 		
-		if(this.cumulatedTime == 0) {
-			this.cumulatedTime = begin;
-		}
+		this.initializeCumulatedTimeIfFirstLoop(begin);
 		
 		final long delta = begin - this.cumulatedTime;
-		
+				
 		try {
-			this.execute(delta);
-		} 
-		catch (Exception e) {
-			LOGGER.error("Actor execution error {}", e.toString());
+			this.processMessagesAndChilds(delta);
+		} catch (Exception e) {
+			LOGGER.error("ActorService {} failed to process messages and childs {}", this.name, e.toString());
 		}
 		
 		final long end = this.realTime();
 		final long updateTime = end - begin;
 		final long delay = Math.max(0,  this.interval - updateTime);
-				
+		
 		try {
-			TimeUnit.MILLISECONDS.sleep(delay);
+			this.sleepToSynchronize(delay);
 		} 
-		catch (InterruptedException e) {
-			LOGGER.error("TaskQueue sleep interrupted {}", e.toString());
+		catch (Exception e) {
+			LOGGER.error("ActorService {} sleep interrupted {}", this.name, e.toString());
 		}
 		
+		this.loopIfRunning();
+	}
+	
+	private void initializeCumulatedTimeIfFirstLoop(final long time) {
+		if(this.cumulatedTime == 0) {
+			this.cumulatedTime = time;
+		}
+	}
+	
+	private void loopIfRunning() {
 		if(this.running) {
 			THREAD_POOL.submit(this);
 		}
@@ -103,6 +110,15 @@ public final class TaskQueue extends Actor implements Nameable, Runnable, Synchr
 			this.fireStop();
 		}
 	}
+	
+	private void processMessagesAndChilds(final long delta) throws Exception {
+		super.update(delta);
+	}
+	
+	private void sleepToSynchronize(final long delay) throws Exception {
+		TimeUnit.MILLISECONDS.sleep(delay);
+	}
+	
 
 	private final long realTime() {
 		return this.timeSource.current();

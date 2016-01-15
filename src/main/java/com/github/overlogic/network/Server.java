@@ -1,6 +1,5 @@
 package com.github.overlogic.network;
 
-import com.github.overlogic.util.ConfigKeyNotFoundException;
 import com.github.overlogic.util.Configuration;
 import com.github.overlogic.util.IntRangeIdentities;
 import com.github.overlogic.util.TypeSwitch;
@@ -18,11 +17,11 @@ public abstract class Server<T extends Client<T>> extends Actor {
 	private final int port;
 	private final int maxClients;
 	
-	public Server(final Configuration configuration) throws ConfigKeyNotFoundException {
+	public Server(final Configuration configuration) throws Exception {
 		this.host = configuration.value(HOST);
         this.port = Integer.valueOf(configuration.value(PORT));
         this.maxClients = Integer.valueOf(configuration.value(MAX_CLIENTS));
-		this.clientIdentities = new IntRangeIdentities(0, this.maxClients());
+		this.clientIdentities = new IntRangeIdentities(0, this.maxClients() + 1);
 	}
 	
 	protected final int acquireClientIdentity() {
@@ -41,15 +40,12 @@ public abstract class Server<T extends Client<T>> extends Actor {
 		return this.port;
 	}
 
-	// + 1 because when we have reached the maximum, the next client should be kicked
-	// Since we assign its identity before kicking it, we should ensure that there 
-	// is an identity available
 	public final int maxClients() {
-		return this.maxClients + 1;
+		return this.maxClients;
 	}
 	
 	public final boolean canAcceptMoreClients() {
-		return this.childs().size() < this.maxClients() - 1;
+		return this.childs().size() < this.maxClients();
 	}
 	
 	protected void handleClientEvent(final ClientEvent<T> event) {
@@ -57,18 +53,26 @@ public abstract class Server<T extends Client<T>> extends Actor {
 		final T client = event.client();
 		switch(event.type()) {
 			case CONNECTED:
-				this.add(client);
+				this.clientConnected(client);
 				break;
 			case DISCONNECTED:
-				this.remove(client);
-				this.releaseClientIdentity(client.identity());
+				this.clientDisconnected(client);
 				break;			
-		}
-		this.notifyObservers(observer -> {
-			observer.send(event);
-		});
+		}		
+		this.fireClientEvent(event);
 	}
-
+	
+	private void clientConnected(final T client) {
+		this.addChild(client);	
+	}
+	
+	private void clientDisconnected(final T client) {
+		this.releaseClientIdentity(client.identity());
+	}
+	
+	private void fireClientEvent(final ClientEvent<T> event) {
+		this.notifyObservers(event);
+	}
 	
 	@Override
 	public boolean handle(final TypeSwitch<AbstractMessage> sw) {

@@ -62,6 +62,8 @@ public abstract class TcpClient<T extends TcpClient<T>> extends Client<TcpClient
 		try {
 			this.socket.close();
 		} catch (IOException e) {
-		}
+			
+		}		
+		this.kill();
 	}
 }
