@@ -3,10 +3,10 @@ package com.github.overlogic;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 
-import com.github.overlogic.network.impl.tcp.TcpServer;
+import com.github.overlogic.network.impl.tcp.AbstractTcpServer;
 import com.github.overlogic.util.Configuration;
 
-public final class TestServer extends TcpServer<TestClient> {
+public final class TestServer extends AbstractTcpServer<TestClient> {
 	public TestServer(final Configuration configuration) throws Exception {
 		super(configuration);
 	}

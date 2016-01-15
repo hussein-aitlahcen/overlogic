@@ -7,23 +7,25 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-import com.github.overlogic.network.ClientEvent;
-import com.github.overlogic.network.ClientEventType;
-import com.github.overlogic.network.Server;
+import com.github.overlogic.network.AbstractServer;
+import com.github.overlogic.network.message.AcceptSocket;
+import com.github.overlogic.network.message.ClientEvent;
+import com.github.overlogic.network.message.ClientEventType;
 import com.github.overlogic.util.Configuration;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 
-public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient<T>> implements CompletionHandler<AsynchronousSocketChannel, Void> {
+public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends AbstractServer<AbstractTcpClient<T>> implements CompletionHandler<AsynchronousSocketChannel, Void> {
+	
 	public static final String BUFFER_SIZE = "tcp.bufferSize";
 	
 	private final AsynchronousServerSocketChannel serverChannel;
 	private final Supplier<byte[]> bufferCache;
 	private final int bufferSize;
 	
-	public TcpServer(final Configuration configuration) throws Exception {
+	public AbstractTcpServer(final Configuration configuration) throws Exception {
 		super(configuration);
 		this.serverChannel = AsynchronousServerSocketChannel.open();
 		this.bufferCache = Suppliers.memoize(this::allocate);
@@ -31,7 +33,7 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	}
 	
 	private byte[] allocate() {
-		return new byte[this.bufferSize() * (this.maxClients() + 1)];		
+		return new byte[this.bufferSize() * (super.maxClients() + 1)];		
 	}
 		
 	public final byte[] buffer() {
@@ -54,45 +56,50 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 		this.serverChannel.accept(null, this);
 	}
 			
-	private void acceptClient(final T client) {
+	private void clientAccepted(final T client) {
 		client.read();
 		client.observedBy(this);
-		this.handleClientEvent(new ClientEvent<TcpClient<T>>(ClientEventType.CONNECTED, client));
+		super.handleClientEvent(
+				new ClientEvent<AbstractTcpClient<T>>(
+						ClientEventType.CONNECTED, 
+						client
+				)
+		);
 	}
 	
-	private void refuseClient(final T client) {
+	private void clientRefused(final T client) {
 		LOGGER.debug("TcpServer refused client");
 		try {
 			client.socket().close();
 			this.releaseClientIdentity(client.identity());
 		} 
 		catch (IOException e) {	
-			System.out.println(e);
+			LOGGER.debug(e.toString());
 		}
 	}
 	
-	private void acceptSocket(final AcceptSocket message) {
+	private void handleAcceptSocket(final AcceptSocket message) {
 		final int identity = this.acquireClientIdentity();
 		final ByteBuffer buffer = this.acquireClientBuffer(identity);
 		final T client = this.createClient(identity, buffer, message.socket());
 		if(this.acceptable(client)) {
-			this.acceptClient(client);
+			this.clientAccepted(client);
 		}
 		else {
-			this.refuseClient(client);
+			this.clientRefused(client);
 		}
 	}
 	
 	@Override
 	public boolean handle(final TypeSwitch<AbstractMessage> sw) {
 		return sw
-				.with(AcceptSocket.class, this::acceptSocket)
+				.with(AcceptSocket.class, this::handleAcceptSocket)
 				.handled() || super.handle(sw);
 	}
 	
 	@Override
 	public void completed(final AsynchronousSocketChannel channel, final Void attachment) {		
-		this.send(new AcceptSocket(channel));
+		super.tell(new AcceptSocket(channel));
 		this.acceptNext();
 	}
 
@@ -111,7 +118,8 @@ public abstract class TcpServer<T extends TcpClient<T>> extends Server<TcpClient
 	}
 	
 	public boolean acceptable(final T client) {
-		return this.canAcceptMoreClients();
+		return super.canAcceptMoreClients();
 	}
+	
 	public abstract T createClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket);
 }

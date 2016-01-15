@@ -5,18 +5,17 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-import com.github.overlogic.network.Client;
-import com.github.overlogic.network.ClientEvent;
-import com.github.overlogic.network.ClientEventType;
-import com.github.overlogic.network.DataChunk;
-import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
+import com.github.overlogic.network.AbstractClient;
+import com.github.overlogic.network.message.ClientEvent;
+import com.github.overlogic.network.message.ClientEventType;
+import com.github.overlogic.network.message.DataChunk;
 
-public abstract class TcpClient<T extends TcpClient<T>> extends Client<TcpClient<T>> implements CompletionHandler<Integer, Void> {
+public abstract class AbstractTcpClient<T extends AbstractTcpClient<T>> extends AbstractClient<AbstractTcpClient<T>> implements CompletionHandler<Integer, Void> {
 
 	private final ByteBuffer buffer;
 	private final AsynchronousSocketChannel socket;
 	
-	public TcpClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket) {
+	public AbstractTcpClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket) {
 		super(identity);
 		this.socket = socket;
 		this.buffer = buffer;
@@ -41,7 +40,7 @@ public abstract class TcpClient<T extends TcpClient<T>> extends Client<TcpClient
 			final byte[] chunk = new byte[bytesRead];
 			this.buffer.position(0);
 			this.buffer.get(chunk);
-			this.send(new DataChunk(ByteBuffer.wrap(chunk)));
+			this.tell(new DataChunk(ByteBuffer.wrap(chunk)));
 			this.read();
 		}
 		else {
@@ -54,16 +53,21 @@ public abstract class TcpClient<T extends TcpClient<T>> extends Client<TcpClient
 		this.disconnected();
 	}  
 	
-	private void disconnected() {
-		final AbstractMessage event = new ClientEvent<TcpClient<T>>(ClientEventType.DISCONNECTED, this);
-		this.notifyObservers(observer -> {
-			observer.send(event);
-		});
+	private void closeSocket() {
 		try {
 			this.socket.close();
-		} catch (IOException e) {
-			
+		} catch (IOException e) {			
 		}		
-		this.kill();
+	}
+	
+	private void disconnected() {
+		super.dispatchMessageToObservers(
+				new ClientEvent<AbstractTcpClient<T>>(
+						ClientEventType.DISCONNECTED, 
+						this
+				)
+		);
+		this.closeSocket();
+		super.kill();
 	}
 }

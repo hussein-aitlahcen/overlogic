@@ -1,4 +1,4 @@
-package com.github.overlogic.network;
+package com.github.overlogic.network.message;
 
 import java.nio.ByteBuffer;
 

@@ -1,4 +1,4 @@
-package com.github.overlogic.network.impl.tcp;
+package com.github.overlogic.network.message;
 
 import java.nio.channels.AsynchronousSocketChannel;
 

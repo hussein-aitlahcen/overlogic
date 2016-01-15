@@ -1,4 +1,4 @@
-package com.github.overlogic.network;
+package com.github.overlogic.network.message;
 
 public enum ClientEventType {
 	CONNECTED,

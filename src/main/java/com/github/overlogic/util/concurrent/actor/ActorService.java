@@ -8,7 +8,9 @@ import com.github.overlogic.util.Nameable;
 import com.github.overlogic.util.TimeSource;
 import com.github.overlogic.util.concurrent.Service;
 
-public final class ActorService extends Actor implements Nameable, Service {
+public final class ActorService extends AbstractActor implements Nameable, Service {
+	
+	public static final long DEFAULT_INTERVAL = 10;
 	
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 	 
@@ -18,6 +20,14 @@ public final class ActorService extends Actor implements Nameable, Service {
 	private final TimeSource timeSource;
 	private long cumulatedTime;
 		
+	public ActorService(final String name) {
+		this(name, DEFAULT_INTERVAL);
+	}
+	
+	public ActorService(final String name, final long interval) {
+		this(name, interval, TimeSource.SYSTEM);
+	}
+	
 	public ActorService(final String name, final long interval, final TimeSource timeSource) {
 		this.name = name;
 		this.interval = interval;
@@ -26,17 +36,17 @@ public final class ActorService extends Actor implements Nameable, Service {
 		this.running = false;
 	}
 	
-	public ActorService doStart() {
+	public ActorService started() {
 		this.start();
 		return this;
 	}
 	
-	public ActorService doStop() {
+	public ActorService stopped() {
 		this.stop();
 		return this;
 	}
 	
-	public ActorService doSynchronize() throws Exception {
+	public ActorService waitUntilFullyStopped() throws Exception {
 		this.synchronize();
 		return this;
 	}

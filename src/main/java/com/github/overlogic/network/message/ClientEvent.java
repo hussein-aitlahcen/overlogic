@@ -1,8 +1,9 @@
-package com.github.overlogic.network;
+package com.github.overlogic.network.message;
 
+import com.github.overlogic.network.AbstractClient;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 
-public final class ClientEvent<T extends Client<T>> extends AbstractMessage {
+public final class ClientEvent<T extends AbstractClient<T>> extends AbstractMessage {
 	private final ClientEventType type;
 	private final T client;
 	public ClientEvent(final ClientEventType type, final T client) {

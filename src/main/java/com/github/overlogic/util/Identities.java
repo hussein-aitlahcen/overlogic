@@ -1,6 +1,6 @@
 package com.github.overlogic.util;
 
 public interface Identities<T> {	
-	T acquire();
-	void release(final T identity);
+	T give();
+	void take(final T identity);
 }

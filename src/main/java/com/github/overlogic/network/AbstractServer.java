@@ -1,23 +1,26 @@
 package com.github.overlogic.network;
 
+import com.github.overlogic.network.message.ClientEvent;
 import com.github.overlogic.util.Configuration;
+import com.github.overlogic.util.Identities;
 import com.github.overlogic.util.IntRangeIdentities;
 import com.github.overlogic.util.TypeSwitch;
-import com.github.overlogic.util.concurrent.actor.Actor;
+import com.github.overlogic.util.concurrent.actor.AbstractActor;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
+import com.github.overlogic.util.concurrent.actor.message.AddChild;
 
-public abstract class Server<T extends Client<T>> extends Actor {
-
+public abstract class AbstractServer<T extends AbstractClient<T>> extends AbstractActor {
+	
 	public static final String HOST = "host";
 	public static final String PORT = "port";
-	public static final String MAX_CLIENTS = "max.clients";
+	public static final String MAX_CLIENTS = "maxClients";
 	
-	private final IntRangeIdentities clientIdentities;
 	private final String host;
 	private final int port;
 	private final int maxClients;
+	private final Identities<Integer> clientIdentities;
 	
-	public Server(final Configuration configuration) throws Exception {
+	public AbstractServer(final Configuration configuration) throws Exception {
 		this.host = configuration.value(HOST);
         this.port = Integer.valueOf(configuration.value(PORT));
         this.maxClients = Integer.valueOf(configuration.value(MAX_CLIENTS));
@@ -25,11 +28,11 @@ public abstract class Server<T extends Client<T>> extends Actor {
 	}
 	
 	protected final int acquireClientIdentity() {
-		return this.clientIdentities.acquire();
+		return this.clientIdentities.give();
 	}
 	
 	protected final void releaseClientIdentity(final int identity) {
-		this.clientIdentities.release(identity);
+		this.clientIdentities.take(identity);
 	}
 	
 	public final String host() {
@@ -45,7 +48,7 @@ public abstract class Server<T extends Client<T>> extends Actor {
 	}
 	
 	public final boolean canAcceptMoreClients() {
-		return this.childs().size() < this.maxClients();
+		return super.childs().size() < this.maxClients();
 	}
 	
 	protected void handleClientEvent(final ClientEvent<T> event) {
@@ -63,15 +66,15 @@ public abstract class Server<T extends Client<T>> extends Actor {
 	}
 	
 	private void clientConnected(final T client) {
-		this.addChild(client);	
+		super.tell(new AddChild(client));	
 	}
 	
 	private void clientDisconnected(final T client) {
 		this.releaseClientIdentity(client.identity());
 	}
 	
-	private void fireClientEvent(final ClientEvent<T> event) {
-		this.notifyObservers(event);
+	protected void fireClientEvent(final ClientEvent<T> event) {
+		super.dispatchMessageToObservers(event);
 	}
 	
 	@Override

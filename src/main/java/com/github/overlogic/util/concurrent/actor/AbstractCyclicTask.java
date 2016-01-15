@@ -2,7 +2,7 @@ package com.github.overlogic.util.concurrent.actor;
 
 import com.github.overlogic.util.concurrent.ExpirableTask;
 
-public class CyclicTask implements ExpirableTask {
+public abstract class AbstractCyclicTask implements ExpirableTask {
 	
 	private static final long NOT_STARTED = -1;
 	private static final long SPIN_INFINITE = -1;
@@ -14,11 +14,11 @@ public class CyclicTask implements ExpirableTask {
 	private long nextExecution;
 	private boolean expired;
 
-	public CyclicTask(final Runnable action, final long delayInMs) {
+	public AbstractCyclicTask(final Runnable action, final long delayInMs) {
 		this(action, delayInMs, SPIN_INFINITE);
 	}
 	
-	public CyclicTask(final Runnable action, final long delayInMs, final long spin) {
+	public AbstractCyclicTask(final Runnable action, final long delayInMs, final long spin) {
 		this.action = action;
 		this.delayInMs = delayInMs;
 		this.spin = spin;
