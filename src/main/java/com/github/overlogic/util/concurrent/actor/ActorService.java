@@ -7,8 +7,9 @@ import java.util.concurrent.TimeUnit;
 import com.github.overlogic.util.Nameable;
 import com.github.overlogic.util.TimeSource;
 import com.github.overlogic.util.concurrent.Service;
+import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 
-public final class ActorService extends AbstractActor implements Nameable, Service {
+public final class ActorService extends AbstractActor implements Nameable, Service<ActorService> {
 	
 	public static final long DEFAULT_INTERVAL = 10;
 	
@@ -36,21 +37,7 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 		this.running = false;
 	}
 	
-	public ActorService started() {
-		this.start();
-		return this;
-	}
-	
-	public ActorService stopped() {
-		this.stop();
-		return this;
-	}
-	
-	public ActorService waitUntilFullyStopped() throws Exception {
-		this.synchronize();
-		return this;
-	}
-	
+	@Override
 	public boolean running() {
 		return this.running;
 	}
@@ -61,21 +48,30 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 	}
 		
 	@Override
-	public void start() {
+	public ActorService start() {
 		this.running = true;
 		THREAD_POOL.submit(this);
+		return this;
 	}
 	
 	@Override
-	public void stop() {
+	public ActorService stop() {
 		this.running = false;
+		return this;
 	}
 		
 	@Override
-	public void synchronize() throws Exception {
+	public ActorService synchronize() throws Exception {
 		synchronized(this) {
 			this.wait();
 		}
+		return this;
+	}
+	
+	@Override
+	public ActorService tell(final AbstractMessage message) {
+		super.tell(message);
+		return this;
 	}
 	
 	@Override
@@ -87,7 +83,7 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 		final long delta = begin - this.cumulatedTime;
 				
 		try {
-			this.processMessagesAndChilds(delta);
+			this.processMessagesAndUpdateChilds(delta);
 		} catch (Exception e) {
 			LOGGER.error("ActorService {} failed to process messages and childs {}", this.name, e.toString());
 		}
@@ -97,13 +93,13 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 		final long delay = Math.max(0,  this.interval - updateTime);
 		
 		try {
-			this.sleepToSynchronize(delay);
+			this.synchronizeDelay(delay);
 		} 
 		catch (Exception e) {
 			LOGGER.error("ActorService {} sleep interrupted {}", this.name, e.toString());
 		}
 		
-		this.loopIfRunning();
+		this.loopIfStillRunning();
 	}
 	
 	private void initializeCumulatedTimeIfFirstLoop(final long time) {
@@ -112,7 +108,7 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 		}
 	}
 	
-	private void loopIfRunning() {
+	private void loopIfStillRunning() {
 		if(this.running) {
 			THREAD_POOL.submit(this);
 		}
@@ -121,15 +117,14 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 		}
 	}
 	
-	private void processMessagesAndChilds(final long delta) throws Exception {
+	private void processMessagesAndUpdateChilds(final long delta) throws Exception {
 		super.update(delta);
 	}
 	
-	private void sleepToSynchronize(final long delay) throws Exception {
+	private void synchronizeDelay(final long delay) throws Exception {
 		TimeUnit.MILLISECONDS.sleep(delay);
 	}
 	
-
 	private final long realTime() {
 		return this.timeSource.current();
 	}
@@ -139,4 +134,5 @@ public final class ActorService extends AbstractActor implements Nameable, Servi
 			this.notifyAll();
 		}
 	}
+	
 }

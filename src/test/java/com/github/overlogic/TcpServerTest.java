@@ -5,13 +5,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.hamcrest.MatcherAssert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.github.overlogic.util.Configuration;
 
 public final class TcpServerTest {
-		
-	static {
+
+	@Before
+	public final void setup() {
 		final ConsoleAppender console = new ConsoleAppender();
 		final String PATTERN = "%d [%p|%C{1}] %m%n";
 		console.setLayout(new PatternLayout(PATTERN));
@@ -28,7 +30,8 @@ public final class TcpServerTest {
 		final int bufferSize = 1024;		
 		final TestServer server = new TestServer(new Configuration() {			
 			@Override
-			public void value(String key, String value) {				
+			public Configuration value(String key, String value) {
+				return this;
 			}			
 			@Override
 			public String value(String key) throws Exception {

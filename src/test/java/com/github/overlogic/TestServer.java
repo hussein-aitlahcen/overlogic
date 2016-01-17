@@ -3,7 +3,7 @@ package com.github.overlogic;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 
-import com.github.overlogic.network.impl.tcp.AbstractTcpServer;
+import com.github.overlogic.network.tcp.AbstractTcpServer;
 import com.github.overlogic.util.Configuration;
 
 public final class TestServer extends AbstractTcpServer<TestClient> {

@@ -1,5 +1,5 @@
 package com.github.overlogic.util.concurrent;
 
-public interface Stoppable {
-	void stop();
+public interface Stoppable<T> {
+	T stop();
 }

@@ -13,4 +13,5 @@ public abstract class AbstractClient<T extends AbstractClient<T>> extends Abstra
 	public final int identity() {
 		return this.identity;
 	}
+	
 }

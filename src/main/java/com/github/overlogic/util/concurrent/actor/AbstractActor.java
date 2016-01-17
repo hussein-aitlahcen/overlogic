@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.overlogic.util.Observable;
-import com.github.overlogic.util.ProperContext;
+import com.github.overlogic.util.Context;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.ExpirableTask;
 import com.github.overlogic.util.concurrent.ExpirableUpdatable;
@@ -21,7 +21,7 @@ import com.github.overlogic.util.concurrent.actor.message.Kill;
 import com.github.overlogic.util.concurrent.actor.message.NotifyObservers;
 import com.github.overlogic.util.concurrent.actor.message.RemoveObserver;
 
-public abstract class AbstractActor implements Observable<AbstractActor>, ExpirableUpdatable, ProperContext {
+public abstract class AbstractActor implements Observable<AbstractActor>, ExpirableUpdatable, Context<AbstractActor> {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractActor.class);
 	
@@ -64,8 +64,9 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 		this.tell(Kill.INSTANCE);
 	}
 	
-	public void tell(final AbstractMessage message) {
+	public AbstractActor tell(final AbstractMessage message) {
 		this.messages.offer(message);
+		return this;
 	}	
 	
 	protected void dispatchMessageToObservers(final AbstractMessage message) {
@@ -94,7 +95,6 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 			child.execute(delta);
 			if(child.expired()) {
 				this.remove(child);
-				LOGGER.debug("Actor child completed");
 			}
 		}
 	}
@@ -123,12 +123,11 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	}
 	
 	private void handleAddChild(final AddChild message) {
-		this.add(new UpdateExpirableTask(message.child()));
+		this.add(new UpdateExpirableObjectTask(message.child()));
 	}
 	
 	private void handleKill(final Kill message) {
 		this.expired(true);
-		LOGGER.debug("Actor killed");
 	}
 		
 	private void handleAddObserver(final AddObserver message) {
@@ -152,4 +151,5 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 				.with(Kill.class, this::handleKill)
 				.handled();
 	}
+	
 }

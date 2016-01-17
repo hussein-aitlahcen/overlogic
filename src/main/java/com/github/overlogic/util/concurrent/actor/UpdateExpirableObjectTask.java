@@ -3,10 +3,11 @@ package com.github.overlogic.util.concurrent.actor;
 import com.github.overlogic.util.concurrent.ExpirableTask;
 import com.github.overlogic.util.concurrent.ExpirableUpdatable;
 
-public final class UpdateExpirableTask implements ExpirableTask {
+public final class UpdateExpirableObjectTask implements ExpirableTask {
+	
 	private final ExpirableUpdatable updatable;
 	
-	public UpdateExpirableTask(final ExpirableUpdatable updatable) {
+	public UpdateExpirableObjectTask(final ExpirableUpdatable updatable) {
 		this.updatable = updatable;
 	}	
 	
@@ -23,4 +24,5 @@ public final class UpdateExpirableTask implements ExpirableTask {
 	public boolean expired() {
 		return this.updatable.expired();
 	}
+	
 }

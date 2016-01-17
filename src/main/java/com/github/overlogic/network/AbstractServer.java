@@ -27,11 +27,11 @@ public abstract class AbstractServer<T extends AbstractClient<T>> extends Abstra
 		this.clientIdentities = new IntRangeIdentities(0, this.maxClients() + 1);
 	}
 	
-	protected final int acquireClientIdentity() {
+	protected final int clientIdentityAcquire() {
 		return this.clientIdentities.give();
 	}
 	
-	protected final void releaseClientIdentity(final int identity) {
+	protected final void clientIdentityRelease(final int identity) {
 		this.clientIdentities.take(identity);
 	}
 	
@@ -70,7 +70,7 @@ public abstract class AbstractServer<T extends AbstractClient<T>> extends Abstra
 	}
 	
 	private void clientDisconnected(final T client) {
-		this.releaseClientIdentity(client.identity());
+		this.clientIdentityRelease(client.identity());
 	}
 	
 	protected void fireClientEvent(final ClientEvent<T> event) {

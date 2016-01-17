@@ -3,20 +3,20 @@ package com.github.overlogic.util.concurrent.actor;
 import com.github.overlogic.util.concurrent.ExpirableTask;
 import com.github.overlogic.util.concurrent.Updatable;
 
-public final class UpdateTask implements ExpirableTask {
-	private final Updatable updatable;
+public final class UpdateObjectTask implements ExpirableTask {
+	private final Updatable object;
 	
-	public UpdateTask(final Updatable updatable) {
-		this.updatable = updatable;
+	public UpdateObjectTask(final Updatable object) {
+		this.object = object;
 	}	
 	
-	public Updatable updatable() {
-		return this.updatable;
+	public Updatable object() {
+		return this.object;
 	}
 	
 	@Override
 	public void execute(final long delta) throws Exception {
-		this.updatable.update(delta);
+		this.object.update(delta);
 	}
 
 	@Override

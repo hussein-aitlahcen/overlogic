@@ -1,5 +1,5 @@
 package com.github.overlogic.util.concurrent;
 
-public interface Synchronizable {
-	void synchronize() throws Exception;
+public interface Synchronizable<T> {
+	T synchronize() throws Exception;
 }

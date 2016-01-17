@@ -3,8 +3,10 @@ package com.github.overlogic.util;
 import java.util.function.Consumer;
 
 public final class TypeSwitch<T> {
+	
 	private final T object;
 	private boolean handled;
+	
 	public TypeSwitch(final T object) {
 		this.object = object;
 		this.handled = false;
@@ -12,7 +14,7 @@ public final class TypeSwitch<T> {
 	
 	public final boolean handled() {
 		return this.handled;
-	}
+	}	
 	
 	@SuppressWarnings("unchecked")
 	public final <U extends T> TypeSwitch<T> with(final Class<U> clazz, final Consumer<U> action) {
@@ -24,4 +26,5 @@ public final class TypeSwitch<T> {
 		}
 		return this;
 	}
+	
 }

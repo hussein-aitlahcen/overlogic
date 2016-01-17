@@ -9,9 +9,9 @@ public final class ActorServiceTest {
 	@Test(timeout = 5000)
 	public void startStopAndSynchronize() throws Exception {
 		new ActorService("test-service")
-			.started()
-			.stopped()
-			.waitUntilFullyStopped();
+			.start()
+			.stop()
+			.synchronize();
 		MatcherAssert.assertThat("ActorService should be stopped", true);
 	}	
 }

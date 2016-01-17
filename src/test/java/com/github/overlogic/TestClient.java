@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.charset.Charset;
 
-import com.github.overlogic.network.impl.tcp.AbstractTcpClient;
 import com.github.overlogic.network.message.DataChunk;
+import com.github.overlogic.network.tcp.AbstractTcpClient;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 

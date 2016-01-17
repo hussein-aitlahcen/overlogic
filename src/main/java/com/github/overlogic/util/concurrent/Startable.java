@@ -1,5 +1,5 @@
 package com.github.overlogic.util.concurrent;
 
-public interface Startable {
-	void start();
+public interface Startable<T> {
+	T start();
 }

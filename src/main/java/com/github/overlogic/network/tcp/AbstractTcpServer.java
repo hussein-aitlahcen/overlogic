@@ -1,4 +1,4 @@
-package com.github.overlogic.network.impl.tcp;
+package com.github.overlogic.network.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -8,45 +8,36 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
 import com.github.overlogic.network.AbstractServer;
-import com.github.overlogic.network.message.AcceptSocket;
 import com.github.overlogic.network.message.ClientEvent;
 import com.github.overlogic.network.message.ClientEventType;
+import com.github.overlogic.network.tcp.message.AcceptSocket;
 import com.github.overlogic.util.Configuration;
+import com.github.overlogic.util.LinearBufferStack;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 
 public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends AbstractServer<AbstractTcpClient<T>> implements CompletionHandler<AsynchronousSocketChannel, Void> {
 	
 	public static final String BUFFER_SIZE = "tcp.bufferSize";
 	
 	private final AsynchronousServerSocketChannel serverChannel;
-	private final Supplier<byte[]> bufferCache;
+	private final LinearBufferStack bufferStack;
 	private final int bufferSize;
 	
 	public AbstractTcpServer(final Configuration configuration) throws Exception {
 		super(configuration);
-		this.serverChannel = AsynchronousServerSocketChannel.open();
-		this.bufferCache = Suppliers.memoize(this::allocate);
 		this.bufferSize = Integer.valueOf(configuration.value(BUFFER_SIZE));
-	}
-	
-	private byte[] allocate() {
-		return new byte[this.bufferSize() * (super.maxClients() + 1)];		
+		this.serverChannel = AsynchronousServerSocketChannel.open();
+		this.bufferStack = new LinearBufferStack(this.bufferSize, super.maxClients() + 1);
 	}
 		
-	public final byte[] buffer() {
-		return this.bufferCache.get();
-	}
-
 	public final int bufferSize() {
 		return this.bufferSize;
 	}
 	
-	private ByteBuffer acquireClientBuffer(final int identity) {
+	private ByteBuffer clientBufferAcquire(final int identity) {
 		return ByteBuffer.wrap(
-					this.buffer(), 
+					this.bufferStack.buffer(), 
 					identity * this.bufferSize, 
 					this.bufferSize
 				);
@@ -69,9 +60,9 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	
 	private void clientRefused(final T client) {
 		LOGGER.debug("TcpServer refused client");
+		this.clientIdentityRelease(client.identity());
 		try {
 			client.socket().close();
-			this.releaseClientIdentity(client.identity());
 		} 
 		catch (IOException e) {	
 			LOGGER.debug(e.toString());
@@ -79,8 +70,8 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	}
 	
 	private void handleAcceptSocket(final AcceptSocket message) {
-		final int identity = this.acquireClientIdentity();
-		final ByteBuffer buffer = this.acquireClientBuffer(identity);
+		final int identity = this.clientIdentityAcquire();
+		final ByteBuffer buffer = this.clientBufferAcquire(identity);
 		final T client = this.createClient(identity, buffer, message.socket());
 		if(this.acceptable(client)) {
 			this.clientAccepted(client);
@@ -122,4 +113,5 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	}
 	
 	public abstract T createClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket);
+
 }

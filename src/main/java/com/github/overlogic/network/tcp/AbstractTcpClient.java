@@ -1,4 +1,4 @@
-package com.github.overlogic.network.impl.tcp;
+package com.github.overlogic.network.tcp;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -61,13 +61,14 @@ public abstract class AbstractTcpClient<T extends AbstractTcpClient<T>> extends 
 	}
 	
 	private void disconnected() {
+		this.closeSocket();
 		super.dispatchMessageToObservers(
 				new ClientEvent<AbstractTcpClient<T>>(
 						ClientEventType.DISCONNECTED, 
 						this
 				)
 		);
-		this.closeSocket();
 		super.kill();
 	}
+	
 }
