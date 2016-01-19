@@ -15,7 +15,7 @@ public final class TestClient extends AbstractTcpClient<TestClient> {
 	}
 	
 	@Override
-	public boolean handle(final TypeSwitch<AbstractMessage> sw) {
+	public boolean handle(final TypeSwitch<AbstractMessage> sw) throws Exception {
 		return sw
 				.with(DataChunk.class, (message) -> {
 					LOGGER.debug(

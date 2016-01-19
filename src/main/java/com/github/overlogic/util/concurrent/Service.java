@@ -1,5 +1,5 @@
 package com.github.overlogic.util.concurrent;
 
-public interface Service<T> extends Runnable, Startable<T>, Stoppable<T>, Synchronizable<T> {
+public interface Service extends Runnable, Startable, Stoppable, Synchronizable {
 	boolean running();
 }

@@ -17,7 +17,7 @@ public final class TypeSwitch<T> {
 	}	
 	
 	@SuppressWarnings("unchecked")
-	public final <U extends T> TypeSwitch<T> with(final Class<U> clazz, final Consumer<U> action) {
+	public final <U extends T> TypeSwitch<T> with(final Class<U> clazz, final Consumer<U> action) throws Exception {
 		if(!this.handled) {
 			if(clazz.isInstance(this.object)) {
 				this.handled = true;

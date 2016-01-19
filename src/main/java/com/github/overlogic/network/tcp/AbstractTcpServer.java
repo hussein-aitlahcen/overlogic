@@ -82,7 +82,7 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	}
 	
 	@Override
-	public boolean handle(final TypeSwitch<AbstractMessage> sw) {
+	public boolean handle(final TypeSwitch<AbstractMessage> sw) throws Exception {
 		return sw
 				.with(AcceptSocket.class, this::handleAcceptSocket)
 				.handled() || super.handle(sw);

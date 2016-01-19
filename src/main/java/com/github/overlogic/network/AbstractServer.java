@@ -78,7 +78,7 @@ public abstract class AbstractServer<T extends AbstractClient<T>> extends Abstra
 	}
 	
 	@Override
-	public boolean handle(final TypeSwitch<AbstractMessage> sw) {
+	public boolean handle(final TypeSwitch<AbstractMessage> sw) throws Exception {
 		return sw
 				.with(ClientEvent.class, this::handleClientEvent)
 				.handled() || super.handle(sw);		

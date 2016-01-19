@@ -1,8 +1,13 @@
 package com.github.overlogic.util.concurrent.actor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.overlogic.util.concurrent.ExpirableTask;
 
 public abstract class AbstractCyclicTask implements ExpirableTask {
+
+	protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCyclicTask.class);
 	
 	private static final long NOT_STARTED = -1;
 	private static final long SPIN_INFINITE = -1;
@@ -52,7 +57,6 @@ public abstract class AbstractCyclicTask implements ExpirableTask {
 		}	
 	}
 
-
 	@Override
 	public boolean expired() {
 		return this.expired;
@@ -69,7 +73,7 @@ public abstract class AbstractCyclicTask implements ExpirableTask {
 			}
 		}
 		else {
-			scheduleNextExecution();
+			this.nextExecution = this.delayInMs;
 		}
 	}
 	

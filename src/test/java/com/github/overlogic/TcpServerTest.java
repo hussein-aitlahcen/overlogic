@@ -1,27 +1,11 @@
 package com.github.overlogic;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.hamcrest.MatcherAssert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.github.overlogic.util.Configuration;
 
-public final class TcpServerTest {
-
-	@Before
-	public final void setup() {
-		final ConsoleAppender console = new ConsoleAppender();
-		final String PATTERN = "%d [%p|%C{1}] %m%n";
-		console.setLayout(new PatternLayout(PATTERN));
-		console.setThreshold(Level.DEBUG);
-		console.activateOptions();
-		Logger.getRootLogger().addAppender(console);
-	}
-	
+public final class TcpServerTest extends AbstractTest {	
 	@Test
 	public final void serverConfigurationIsValid() throws Exception {		
 		final String host = "127.0.0.1";

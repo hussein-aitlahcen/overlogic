@@ -13,7 +13,6 @@ import com.github.overlogic.util.Observable;
 import com.github.overlogic.util.Context;
 import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.ExpirableTask;
-import com.github.overlogic.util.concurrent.ExpirableUpdatable;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 import com.github.overlogic.util.concurrent.actor.message.AddChild;
 import com.github.overlogic.util.concurrent.actor.message.AddObserver;
@@ -21,14 +20,17 @@ import com.github.overlogic.util.concurrent.actor.message.Kill;
 import com.github.overlogic.util.concurrent.actor.message.NotifyObservers;
 import com.github.overlogic.util.concurrent.actor.message.RemoveObserver;
 
-public abstract class AbstractActor implements Observable<AbstractActor>, ExpirableUpdatable, Context<AbstractActor> {
+public abstract class AbstractActor implements Observable<AbstractActor>, ExpirableTask, Context {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractActor.class);
 	
 	private final List<AbstractActor> observers;
+	private long cumulatedTime;
+	private boolean expired;
+	
 	protected final List<ExpirableTask> childs;
 	protected final Queue<AbstractMessage> messages;
-	private boolean expired;
+	
 	
 	public AbstractActor() {
 		this.observers = new ArrayList<AbstractActor>();
@@ -51,12 +53,20 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	public void notifyObservers(final Consumer<AbstractActor> action) {
 		this.tell(new NotifyObservers(action));
 	}
+	
+	public long cumulatedTime() {
+		return this.cumulatedTime;
+	}
+		
+	protected void accumulate(final long delta) {
+		this.cumulatedTime += delta;
+	}
 
 	protected List<ExpirableTask> childs() {
 		return this.childs;
 	}
 	
-	public void addChild(final AbstractActor child) {
+	public void addChild(final ExpirableTask child) {
 		this.tell(new AddChild(child));
 	}
 				
@@ -64,9 +74,8 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 		this.tell(Kill.INSTANCE);
 	}
 	
-	public AbstractActor tell(final AbstractMessage message) {
+	public void tell(final AbstractMessage message) {
 		this.messages.offer(message);
-		return this;
 	}	
 	
 	protected void dispatchMessageToObservers(final AbstractMessage message) {
@@ -75,7 +84,7 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 		});
 	}
 	
-	private void handlePendingMessages() {
+	private void handlePendingMessages() throws Exception {
 		int size = this.messages.size();
 		for(int i = 0; i < size; i++) {
 			final AbstractMessage message = this.messages.poll();
@@ -91,7 +100,7 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	
 	private void updateChildTasks(final long delta) throws Exception {
 		for(int i = this.childs.size() - 1; i > -1; i--) {
-			ExpirableTask child = this.childs.get(i);
+			final ExpirableTask child = this.childs.get(i);
 			child.execute(delta);
 			if(child.expired()) {
 				this.remove(child);
@@ -100,7 +109,8 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	}
 	
 	@Override
-	public void update(final long delta) throws Exception {
+	public void execute(final long delta) throws Exception {
+		this.accumulate(delta);
 		this.handlePendingMessages();
 		this.updateChildTasks(delta);
 	}
@@ -123,7 +133,7 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	}
 	
 	private void handleAddChild(final AddChild message) {
-		this.add(new UpdateExpirableObjectTask(message.child()));
+		this.add(message.child());
 	}
 	
 	private void handleKill(final Kill message) {
@@ -141,8 +151,8 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	private void handleNotifyObservers(final NotifyObservers message) {
 		this.observers.forEach(message.action());
 	}
-	
-	public boolean handle(final TypeSwitch<AbstractMessage> sw) {	
+		
+	public boolean handle(final TypeSwitch<AbstractMessage> sw) throws Exception {	
 		return sw
 				.with(AddObserver.class, this::handleAddObserver)
 				.with(RemoveObserver.class, this::handleRemoveObserver)
