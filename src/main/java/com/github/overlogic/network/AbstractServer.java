@@ -66,7 +66,7 @@ public abstract class AbstractServer<T extends AbstractClient<T>> extends Abstra
 	}
 	
 	private void clientConnected(final T client) {
-		super.tell(new AddChild(client));	
+		this.tell(new AddChild(client));	
 	}
 	
 	private void clientDisconnected(final T client) {
@@ -74,7 +74,7 @@ public abstract class AbstractServer<T extends AbstractClient<T>> extends Abstra
 	}
 	
 	protected void fireClientEvent(final ClientEvent<T> event) {
-		super.dispatchMessageToObservers(event);
+		this.tellObservers(event);
 	}
 	
 	@Override

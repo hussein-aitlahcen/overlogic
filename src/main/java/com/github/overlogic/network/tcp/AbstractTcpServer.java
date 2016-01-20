@@ -50,7 +50,7 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	private void clientAccepted(final T client) {
 		client.read();
 		client.observedBy(this);
-		super.handleClientEvent(
+		this.handleClientEvent(
 				new ClientEvent<AbstractTcpClient<T>>(
 						ClientEventType.CONNECTED, 
 						client
@@ -72,12 +72,17 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	private void handleAcceptSocket(final AcceptSocket message) {
 		final int identity = this.clientIdentityAcquire();
 		final ByteBuffer buffer = this.clientBufferAcquire(identity);
-		final T client = this.createClient(identity, buffer, message.socket());
-		if(this.acceptable(client)) {
-			this.clientAccepted(client);
+		try {
+			final T client = this.createClient(identity, buffer, message.socket());
+			if(this.acceptable(client)) {
+				this.clientAccepted(client);
+			}
+			else {
+				this.clientRefused(client);
+			}
 		}
-		else {
-			this.clientRefused(client);
+		catch(final Exception e) {
+			LOGGER.error("TcpServer failed to accept client : " + e.toString());
 		}
 	}
 	
@@ -90,7 +95,7 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	
 	@Override
 	public void completed(final AsynchronousSocketChannel channel, final Void attachment) {		
-		super.tell(new AcceptSocket(channel));
+		this.tell(new AcceptSocket(channel));
 		this.acceptNext();
 	}
 
@@ -109,9 +114,9 @@ public abstract class AbstractTcpServer<T extends AbstractTcpClient<T>> extends 
 	}
 	
 	public boolean acceptable(final T client) {
-		return super.canAcceptMoreClients();
+		return this.canAcceptMoreClients();
 	}
 	
-	public abstract T createClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket);
+	public abstract T createClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket) throws Exception;
 
 }

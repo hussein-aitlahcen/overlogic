@@ -10,7 +10,7 @@ import com.github.overlogic.util.TypeSwitch;
 import com.github.overlogic.util.concurrent.actor.message.AbstractMessage;
 
 public final class TestClient extends AbstractTcpClient<TestClient> {
-	public TestClient(int identity, ByteBuffer buffer, AsynchronousSocketChannel socket) {
+	public TestClient(int identity, ByteBuffer buffer, AsynchronousSocketChannel socket) throws Exception {
 		super(identity, buffer, socket);
 	}
 	

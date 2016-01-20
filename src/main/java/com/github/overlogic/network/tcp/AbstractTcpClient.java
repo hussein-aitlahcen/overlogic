@@ -14,11 +14,17 @@ public abstract class AbstractTcpClient<T extends AbstractTcpClient<T>> extends 
 
 	private final ByteBuffer buffer;
 	private final AsynchronousSocketChannel socket;
+	private final String ip;
 	
-	public AbstractTcpClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket) {
+	public AbstractTcpClient(final int identity, final ByteBuffer buffer, final AsynchronousSocketChannel socket) throws Exception {
 		super(identity);
 		this.socket = socket;
 		this.buffer = buffer;
+		this.ip = this.socket.getRemoteAddress().toString();
+	}
+	
+	public final String ip() {
+		return this.ip;
 	}
 	
 	public final ByteBuffer buffer() {
@@ -55,6 +61,8 @@ public abstract class AbstractTcpClient<T extends AbstractTcpClient<T>> extends 
 	
 	private void closeSocket() {
 		try {
+			this.socket.shutdownInput();
+			this.socket.shutdownOutput();
 			this.socket.close();
 		} catch (IOException e) {			
 		}		
@@ -62,13 +70,13 @@ public abstract class AbstractTcpClient<T extends AbstractTcpClient<T>> extends 
 	
 	private void disconnected() {
 		this.closeSocket();
-		super.dispatchMessageToObservers(
+		this.tellObservers(
 				new ClientEvent<AbstractTcpClient<T>>(
 						ClientEventType.DISCONNECTED, 
 						this
 				)
 		);
-		super.kill();
+		this.kill();
 	}
 	
 }

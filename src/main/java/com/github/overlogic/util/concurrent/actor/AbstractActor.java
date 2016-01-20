@@ -30,8 +30,7 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 	
 	protected final List<ExpirableTask> childs;
 	protected final Queue<AbstractMessage> messages;
-	
-	
+		
 	public AbstractActor() {
 		this.observers = new ArrayList<AbstractActor>();
 		this.childs = new ArrayList<ExpirableTask>();
@@ -78,7 +77,7 @@ public abstract class AbstractActor implements Observable<AbstractActor>, Expira
 		this.messages.offer(message);
 	}	
 	
-	protected void dispatchMessageToObservers(final AbstractMessage message) {
+	protected void tellObservers(final AbstractMessage message) {
 		this.notifyObservers(observer -> {
 			observer.tell(message);
 		});

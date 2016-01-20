@@ -11,7 +11,7 @@ public final class TestServer extends AbstractTcpServer<TestClient> {
 		super(configuration);
 	}
 	@Override
-	public TestClient createClient(int identity, ByteBuffer buffer, AsynchronousSocketChannel socket) {
+	public TestClient createClient(int identity, ByteBuffer buffer, AsynchronousSocketChannel socket) throws Exception {
 		return new TestClient(identity, buffer, socket);
 	}
 }

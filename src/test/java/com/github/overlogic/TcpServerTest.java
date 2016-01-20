@@ -14,8 +14,7 @@ public final class TcpServerTest extends AbstractTest {
 		final int bufferSize = 1024;		
 		final TestServer server = new TestServer(new Configuration() {			
 			@Override
-			public Configuration value(String key, String value) {
-				return this;
+			public void value(String key, String value) {
 			}			
 			@Override
 			public String value(String key) throws Exception {
